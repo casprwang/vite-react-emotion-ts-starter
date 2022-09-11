@@ -32,12 +32,14 @@ export const useColumns = (data) =>
               </div>
             ),
             size: 200,
+            enableResizing: true,
           })
         );
       } else {
         ret.push(
           columnHelper.accessor(key, {
             cell: (info) => info.getValue(),
+            enableResizing: true,
           })
         );
       }

@@ -4,7 +4,6 @@ const ROW_COUNT = 1000;
 const cols = [
   {
     id: "Symbol",
-    width: 130,
     fn: () => faker.commerce.productName().substr(0, 4).toUpperCase(),
   },
   {

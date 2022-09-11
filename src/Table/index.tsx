@@ -18,12 +18,15 @@ import { css, jsx } from "@emotion/react";
 import "./styles.css";
 import { useColumns } from "./hooks";
 
+const COLUMN_HEIGHT = 44;
+const ROW_HEIGTH = 72;
+
 export const Table = ({ data, update }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const columns = useColumns(data);
   const [sorting, setSorting] = useState<SortingState>([
     {
-      id: "Price",
+      id: "Symbol",
       desc: true,
     },
   ]);
@@ -33,15 +36,11 @@ export const Table = ({ data, update }) => {
     columns,
     getCoreRowModel: getCoreRowModel(),
     debugTable: true,
+    enableSorting: true,
     state: {
       sorting,
     },
     manualSorting: true,
-    onSortingChange: (props) => {
-      console.log(props);
-      setSorting(props);
-      update();
-    },
     getSortedRowModel: getSortedRowModel(),
   });
 
@@ -53,7 +52,10 @@ export const Table = ({ data, update }) => {
       () => tableContainerRef.current,
       [tableContainerRef.current]
     ),
-    estimateSize: useCallback(() => 72, []),
+    estimateSize: useCallback(
+      () => (data.length * ROW_HEIGTH + COLUMN_HEIGHT) / (data.length + 1),
+      [data]
+    ),
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
@@ -63,6 +65,24 @@ export const Table = ({ data, update }) => {
     virtualRows.length > 0
       ? totalSize - (virtualRows?.[virtualRows.length - 1]?.end || 0)
       : 0;
+  const handleSort = useCallback(
+    (e, header) => {
+      e.preventDefault();
+      const nextOrder = header.column.getNextSortingOrder();
+      setSorting(
+        nextOrder
+          ? [
+              {
+                desc: nextOrder === "desc",
+                id: header.id,
+              },
+            ]
+          : []
+      );
+      update();
+    },
+    [sorting, setSorting, update]
+  );
 
   return (
     <div ref={tableContainerRef} className="container">
@@ -77,28 +97,21 @@ export const Table = ({ data, update }) => {
                     colSpan: header.colSpan,
                     style: {
                       width: header.getSize(),
+                      userSelect: "none",
                     },
                   }}
+                  onClick={(e) => handleSort(e, header)}
                 >
-                  {header.isPlaceholder ? null : (
-                    <div
-                      {...{
-                        className: header.column.getCanSort()
-                          ? "cursor-pointer select-none"
-                          : "",
-                        onClick: () => update(),
-                      }}
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                      {{
-                        asc: " ↓",
-                        desc: " ↑",
-                      }[header.column.getIsSorted() as string] ?? null}
-                    </div>
-                  )}
+                  <div>
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                    {{
+                      asc: " ▲",
+                      desc: " ▼",
+                    }[header.column.getIsSorted() as string] ?? null}
+                  </div>
                 </th>
               ))}
             </tr>

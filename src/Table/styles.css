@@ -1,7 +1,8 @@
 .container {
   border: 1px solid lightgray;
-  height: 800px;
-  max-width: 1200px !important;
+  height: calc(95vh - 50px);
+  width: 98vw;
+  max-width: 98vw !important;
   overflow: auto;
 }
 
