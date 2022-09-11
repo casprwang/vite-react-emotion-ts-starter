@@ -10,16 +10,27 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import chartSvg from "../chart.svg";
+import { cols } from "../../getData";
 
 const columnHelper = createColumnHelper();
 
-export const useColumns = (data) =>
+export const ALIGN_RIGHT_COLS = [
+  "52-Week Low",
+  "52-Week High",
+  "Price",
+  "Today % Change",
+  "Today’s Volume",
+  "Market Cap",
+  "Relative Volume",
+];
+
+export const useColumns = () =>
   useMemo(() => {
     const ret = [];
-    Object.keys(data[0]).forEach((key) => {
-      if (key === "Sparkline") {
+    for (const col of cols) {
+      if (col.id === "Sparkline") {
         ret.push(
-          columnHelper.accessor(key, {
+          columnHelper.accessor(col.id, {
             cell: (info) => (
               <div
                 style={{
@@ -35,14 +46,26 @@ export const useColumns = (data) =>
             enableResizing: true,
           })
         );
+      } else if (ALIGN_RIGHT_COLS.includes(col.id)) {
+        ret.push(
+          columnHelper.accessor(col.id, {
+            cell: (info) => (
+              <div style={{ float: "right" }}>{info.getValue()}</div>
+            ),
+            size: col.width,
+            meta: {
+              alignRight: true,
+            },
+          })
+        );
       } else {
         ret.push(
-          columnHelper.accessor(key, {
+          columnHelper.accessor(col.id, {
             cell: (info) => info.getValue(),
-            enableResizing: true,
+            size: col.width,
           })
         );
       }
-    });
+    }
     return ret;
-  }, [data]);
+  }, []);

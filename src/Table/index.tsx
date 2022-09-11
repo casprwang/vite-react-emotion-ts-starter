@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback } from "react";
+import React, { useState, memo, useMemo, useRef, useCallback } from "react";
 
 import {
   ColumnDef,
@@ -7,11 +7,19 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   Row,
+  Cell,
   SortingState,
   useReactTable,
+  Header,
 } from "@tanstack/react-table";
-import { useVirtualizer, Virtualizer } from "@tanstack/react-virtual";
-import { useVirtual } from "react-virtual";
+import {
+  useVirtualizer,
+  Virtualizer,
+  useWindowVirtualizer,
+} from "@tanstack/react-virtual";
+import isEqual from "lodash/isEqual";
+import { HeaderRow } from "./HeaderRow";
+import { BodyRow } from "./Body.Row";
 
 /** @jsx jsx */
 import { css, jsx } from "@emotion/react";
@@ -23,7 +31,7 @@ const ROW_HEIGTH = 72;
 
 export const Table = ({ data, update }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const columns = useColumns(data);
+  const columns = useColumns();
   const [sorting, setSorting] = useState<SortingState>([
     {
       id: "Symbol",
@@ -32,10 +40,9 @@ export const Table = ({ data, update }) => {
   ]);
 
   const table = useReactTable({
-    data: data,
+    data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    debugTable: true,
     enableSorting: true,
     state: {
       sorting,
@@ -53,18 +60,21 @@ export const Table = ({ data, update }) => {
       [tableContainerRef.current]
     ),
     estimateSize: useCallback(
-      () => (data.length * ROW_HEIGTH + COLUMN_HEIGHT) / (data.length + 1),
-      [data]
+      () => (rows.length * ROW_HEIGTH + COLUMN_HEIGHT) / (rows.length + 1),
+      [rows]
     ),
   });
 
-  const virtualRows = rowVirtualizer.getVirtualItems();
-  const totalSize = rowVirtualizer.getTotalSize();
+  const [virtualRows, totalSize] = useMemo(
+    () => [rowVirtualizer.getVirtualItems(), rowVirtualizer.getTotalSize()],
+    [rowVirtualizer.getVirtualItems(), rowVirtualizer.getTotalSize()]
+  );
   const paddingTop = virtualRows.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
   const paddingBottom =
     virtualRows.length > 0
       ? totalSize - (virtualRows?.[virtualRows.length - 1]?.end || 0)
       : 0;
+
   const handleSort = useCallback(
     (e, header) => {
       e.preventDefault();
@@ -91,28 +101,9 @@ export const Table = ({ data, update }) => {
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <th
-                  {...{
-                    key: header.id,
-                    colSpan: header.colSpan,
-                    style: {
-                      width: header.getSize(),
-                      userSelect: "none",
-                    },
-                  }}
-                  onClick={(e) => handleSort(e, header)}
-                >
-                  <div>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                    {{
-                      asc: " ▲",
-                      desc: " ▼",
-                    }[header.column.getIsSorted() as string] ?? null}
-                  </div>
-                </th>
+                <React.Fragment key={header.id}>
+                  <HeaderRow header={header} onSort={handleSort} />
+                </React.Fragment>
               ))}
             </tr>
           ))}
@@ -123,18 +114,11 @@ export const Table = ({ data, update }) => {
               <td style={{ height: `${paddingTop}px` }} />
             </tr>
           )}
-          {virtualRows.map((virtualRow) => {
-            const row = rows[virtualRow.index];
-            return (
-              <tr key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
+          {virtualRows.map((virtualRow) => (
+            <React.Fragment key={virtualRow.index}>
+              <BodyRow row={rows[virtualRow.index]} />
+            </React.Fragment>
+          ))}
           {paddingBottom > 0 && (
             <tr>
               <td style={{ height: `${paddingBottom}px` }} />

@@ -77,5 +77,7 @@ th:hover {
 
 td,
 th {
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 16px;
 }
