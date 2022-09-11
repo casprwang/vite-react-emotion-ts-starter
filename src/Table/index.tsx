@@ -55,6 +55,7 @@ export const Table = ({ data, update }) => {
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
+    overscan: 3,
     getScrollElement: useCallback(
       () => tableContainerRef.current,
       [tableContainerRef.current]
