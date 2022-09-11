@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-const ROW_COUNT = 200;
+const ROW_COUNT = 1000;
 
 const cols = [
   {

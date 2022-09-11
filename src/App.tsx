@@ -8,14 +8,7 @@ import { getData } from "./getData";
 export default function App() {
   const [data, setData] = useState(getData());
   return (
-    <div>
-      <button
-        onClick={() => {
-          setData(getData());
-        }}
-      >
-        update
-      </button>
+    <div onClick={() => setData(getData())}>
       <Table data={data} update={() => setData(getData())} />
     </div>
   );

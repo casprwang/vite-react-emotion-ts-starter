@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 
 import {
   ColumnDef,
@@ -10,7 +10,8 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import chartSvg from "./chart.svg";
+import { useVirtualizer, Virtualizer } from "@tanstack/react-virtual";
+import { useVirtual } from "react-virtual";
 
 /** @jsx jsx */
 import { css, jsx } from "@emotion/react";
@@ -18,6 +19,7 @@ import "./styles.css";
 import { useColumns } from "./hooks";
 
 export const Table = ({ data, update }) => {
+  const tableContainerRef = useRef<HTMLDivElement>(null);
   const columns = useColumns(data);
   const [sorting, setSorting] = useState<SortingState>([
     {
@@ -43,8 +45,24 @@ export const Table = ({ data, update }) => {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const tableContainerRef = React.useRef<HTMLDivElement>(null);
   const { rows } = table.getRowModel();
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: useCallback(
+      () => tableContainerRef.current,
+      [tableContainerRef.current]
+    ),
+    estimateSize: useCallback(() => 72, []),
+  });
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+  const paddingTop = virtualRows.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
+  const paddingBottom =
+    virtualRows.length > 0
+      ? totalSize - (virtualRows?.[virtualRows.length - 1]?.end || 0)
+      : 0;
 
   return (
     <div ref={tableContainerRef} className="container">
@@ -87,15 +105,28 @@ export const Table = ({ data, update }) => {
           ))}
         </thead>
         <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
+          {paddingTop > 0 && (
+            <tr>
+              <td style={{ height: `${paddingTop}px` }} />
             </tr>
-          ))}
+          )}
+          {virtualRows.map((virtualRow) => {
+            const row = rows[virtualRow.index];
+            return (
+              <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+          {paddingBottom > 0 && (
+            <tr>
+              <td style={{ height: `${paddingBottom}px` }} />
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
