@@ -1,12 +1,12 @@
 import React, {
   useState,
+  forwardRef,
   useEffect,
   memo,
   useMemo,
   useRef,
   useCallback,
 } from "react";
-import AutoSizer from "react-virtualized-auto-sizer";
 
 import {
   ColumnDef,
@@ -32,12 +32,86 @@ import { BodyRow } from "./Body.Row";
 /** @jsx jsx */
 import { css, jsx } from "@emotion/react";
 import "./styles.css";
-import { useColumns } from "./hooks";
+import {
+  useColumns,
+  useIsComponentVisible,
+  useIsComponentStuckTop,
+} from "./hooks";
 
 const COLUMN_HEIGHT = 44;
 const ROW_HEIGTH = 72;
+const BANNER_HEIGHT = 191;
 
-export const Table = ({ data, update }) => {
+const SubHeader = ({ width, children }) => {
+  // non sticky non collapsible component
+  if (!children) return null;
+  return (
+    <caption
+      style={{
+        position: "sticky",
+        left: 0,
+        width,
+      }}
+    >
+      {children}
+    </caption>
+  );
+};
+
+const CollapsibleHeader = ({ width, children }) => {
+  if (!children) return null;
+  return (
+    <caption
+      style={{
+        textAlign: "left",
+        position: "sticky",
+        top: 0,
+        left: 0,
+        background: "white",
+        height: 40,
+        zIndex: 5,
+        width,
+        paddingTop: 20,
+        paddingBottom: 20,
+      }}
+    >
+      {children}
+    </caption>
+  );
+};
+
+const Banner = memo(
+  forwardRef(({ width, height }: {}, ref) => {
+    return (
+      <caption
+        ref={ref}
+        style={{
+          width,
+          position: "sticky",
+          height,
+          left: 0,
+          background: "rgb(43, 148, 246)",
+        }}
+      >
+        <img
+          style={{
+            height: BANNER_HEIGHT,
+          }}
+          role="presentation"
+          src="https://cdn.robinhood.com/app_assets/list_illustrations/technology/header_web/1x.png"
+        />
+      </caption>
+    );
+  }),
+  isEqual
+);
+
+export const Table = ({
+  data,
+  update,
+  subheaderRenderer,
+  collapsibleHeaderRenderer,
+}) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const columns = useColumns();
   const [sorting, setSorting] = useState<SortingState>([
@@ -102,142 +176,17 @@ export const Table = ({ data, update }) => {
     },
     [sorting, setSorting, update]
   );
-  const [isStuck, setIsStuck] = useState(false);
-  const headerRef = useRef();
-  useEffect(() => {
-    const listener = () => {
-      if (
-        headerRef.current?.getBoundingClientRect().top -
-          tableContainerRef.current?.getBoundingClientRect().top ===
-        1
-      ) {
-        setIsStuck(true);
-      } else {
-        setIsStuck(false);
-      }
-    };
-    if (tableContainerRef.current) {
-      tableContainerRef.current.addEventListener("scroll", listener);
-    }
-    return () => {
-      if (tableContainerRef.current) {
-        tableContainerRef.current.removeEventListener("scroll", listener);
-      }
-    };
-  }, [tableContainerRef]);
 
+  const bannerRef = useRef(null);
+  const isBannerStuck = useIsComponentStuckTop(bannerRef, tableContainerRef);
   return (
     <div ref={tableContainerRef} className="container">
       <table>
-        <caption
-          style={{
-            width: "78vw",
-            position: "sticky",
-            height: 191,
-            left: 0,
-            background: "rgb(43, 148, 246)",
-          }}
-        >
-          <img
-            style={{
-              height: 191,
-              // position: "absolute",
-              // left: 300,
-            }}
-            role="presentation"
-            src="https://cdn.robinhood.com/app_assets/list_illustrations/technology/header_web/1x.png"
-          />
-        </caption>
-        <caption
-          ref={headerRef}
-          style={{
-            textAlign: "left",
-            position: "sticky",
-            top: 0,
-            left: 0,
-            background: "white",
-            height: 40,
-            zIndex: 5,
-            width: "78vw",
-            paddingTop: 20,
-            paddingBottom: 20,
-          }}
-        >
-          <h1
-            css={[
-              {
-                paddingLeft: 20,
-                margin: 0,
-                fontWeight: 500,
-                transition: "transform 300ms",
-              },
-              isStuck && {
-                transform: `translateY(-${70}px)`,
-              },
-            ]}
-          >
-            Technology
-          </h1>
-          <h1
-            css={[
-              {
-                margin: 0,
-                paddingLeft: 20,
-                fontWeight: 500,
-                transition: "transform 300ms",
-                transform: `translateY(${70}px)`,
-              },
-              isStuck && {
-                transform: `translateY(${-25}px)`,
-              },
-              {
-                visibility: isStuck ? "visible" : "hidden",
-              },
-              {
-                display: "flex",
-                gap: 10,
-              },
-            ]}
-          >
-            <span>
-              <img
-                css={{
-                  height: 29,
-                  borderRadius: 5,
-                }}
-                src="https://cdn.robinhood.com/app_assets/list_illustrations/technology/portrait_48/1x.png"
-              />
-            </span>
-            <span>Technology</span>
-          </h1>
-        </caption>
-        <caption
-          style={{
-            position: "sticky",
-            left: 0,
-            width: 400,
-          }}
-        >
-          <p
-            style={{
-              width: 800,
-              textAlign: "left",
-              fontSize: 15,
-              lineHeight: "24px",
-              paddingLeft: 20,
-              marginBottom: 20,
-              marginTop: 0,
-              overflowWrap: "break-word",
-              whiteSpace: "normal",
-              wordBreak: "break-all",
-              fontWeight: 500,
-            }}
-          >
-            The future is now. See companies researching and developing the
-            technology we use in our daily lives, including electronics,
-            software, computers, and information technology.
-          </p>
-        </caption>
+        <Banner width="78vw" height={BANNER_HEIGHT} ref={bannerRef} />
+        <CollapsibleHeader width="78vw">
+          {collapsibleHeaderRenderer?.(isBannerStuck)}
+        </CollapsibleHeader>
+        <SubHeader width="78vw">{subheaderRenderer()}</SubHeader>
         <thead
           style={{
             top: 80,
