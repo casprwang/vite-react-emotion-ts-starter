@@ -9,6 +9,13 @@ export default function App() {
   const [data, setData] = useState(getData());
   return (
     <div>
+      <button
+        onClick={() => {
+          setData(getData());
+        }}
+      >
+        Update
+      </button>
       <Table data={data} update={() => setData(getData())} />
       <br />
       table size: {data.length} x {Object.keys(data[0]).length}

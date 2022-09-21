@@ -49,6 +49,7 @@ export const Table = ({ data, update }) => {
     },
     manualSorting: true,
     getSortedRowModel: getSortedRowModel(),
+    debugAll: true,
   });
 
   const { rows } = table.getRowModel();
