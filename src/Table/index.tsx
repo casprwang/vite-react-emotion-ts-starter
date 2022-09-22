@@ -28,92 +28,37 @@ import {
 import isEqual from "lodash/isEqual";
 import { HeaderRow } from "./HeaderRow";
 import { BodyRow } from "./Body.Row";
+import { SubHeaderContainer } from "./SubHeaderContainer";
+import { CollapsibleHeaderContainer } from "./CollapsibleHeaderContainer";
+import { Banner } from "./Banner";
 
 /** @jsx jsx */
 import { css, jsx } from "@emotion/react";
 import "./styles.css";
+import { useIsComponentVisible, useIsComponentStuckTop } from "./hooks";
 import {
-  useColumns,
-  useIsComponentVisible,
-  useIsComponentStuckTop,
-} from "./hooks";
-
-const COLUMN_HEIGHT = 44;
-const ROW_HEIGTH = 72;
-const BANNER_HEIGHT = 191;
-
-const SubHeader = ({ width, children }) => {
-  // non sticky non collapsible component
-  if (!children) return null;
-  return (
-    <caption
-      style={{
-        position: "sticky",
-        left: 0,
-        width,
-      }}
-    >
-      {children}
-    </caption>
-  );
-};
-
-const CollapsibleHeader = ({ width, children }) => {
-  if (!children) return null;
-  return (
-    <caption
-      style={{
-        textAlign: "left",
-        position: "sticky",
-        top: 0,
-        left: 0,
-        background: "white",
-        height: 40,
-        zIndex: 5,
-        width,
-        paddingTop: 20,
-        paddingBottom: 20,
-      }}
-    >
-      {children}
-    </caption>
-  );
-};
-
-const Banner = memo(
-  forwardRef(({ width, height }: {}, ref) => {
-    return (
-      <caption
-        ref={ref}
-        style={{
-          width,
-          position: "sticky",
-          height,
-          left: 0,
-          background: "rgb(43, 148, 246)",
-        }}
-      >
-        <img
-          style={{
-            height: BANNER_HEIGHT,
-          }}
-          role="presentation"
-          src="https://cdn.robinhood.com/app_assets/list_illustrations/technology/header_web/1x.png"
-        />
-      </caption>
-    );
-  }),
-  isEqual
-);
+  COLUMN_HEIGHT,
+  ROW_HEIGTH,
+  BANNER_HEIGHT,
+  COLLAPSIBLE_HEADER_HEIGHT,
+} from "./consts";
 
 export const Table = ({
   data,
+  columns,
+  width,
   update,
   subheaderRenderer,
   collapsibleHeaderRenderer,
+}: {
+  data: any[];
+  width: number;
+  columns: any[];
+  update: any;
+  subheaderRenderer: any;
+  collapsibleHeaderRenderer: any;
 }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const columns = useColumns();
   const [sorting, setSorting] = useState<SortingState>([
     {
       id: "Symbol",
@@ -182,14 +127,16 @@ export const Table = ({
   return (
     <div ref={tableContainerRef} className="container">
       <table>
-        <Banner width="78vw" height={BANNER_HEIGHT} ref={bannerRef} />
-        <CollapsibleHeader width="78vw">
+        <Banner width={width} ref={bannerRef} />
+        <CollapsibleHeaderContainer width={width}>
           {collapsibleHeaderRenderer?.(isBannerStuck)}
-        </CollapsibleHeader>
-        <SubHeader width="78vw">{subheaderRenderer()}</SubHeader>
+        </CollapsibleHeaderContainer>
+        <SubHeaderContainer width={width}>
+          {subheaderRenderer()}
+        </SubHeaderContainer>
         <thead
           style={{
-            top: 80,
+            top: COLLAPSIBLE_HEADER_HEIGHT,
             position: "sticky",
           }}
         >

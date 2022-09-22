@@ -12,60 +12,70 @@ import {
 import chartSvg from "../chart.svg";
 import { cols } from "../../getData";
 
-const columnHelper = createColumnHelper();
+import zipWith from "lodash/zipWith";
+import shuffle from "lodash/shuffle";
+import response from "../../payload.json";
 
-export const ALIGN_RIGHT_COLS = [
-  "52-Week Low",
-  "52-Week High",
-  "Price",
-  "Today % Change",
-  "Today’s Volume",
-  "Market Cap",
-  "Relative Volume",
-];
+type ColumnData = {
+  id: string;
+  alignment: string;
+  pollable: boolean;
+  component: any;
+};
 
-export const useColumns = () =>
-  useMemo(() => {
-    const ret = [];
-    for (const col of cols) {
-      if (col.id === "Sparkline") {
-        ret.push(
-          columnHelper.accessor(col.id, {
-            cell: (info) => (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <img src={chartSvg} className="logo react" alt="React logo" />
-              </div>
-            ),
-            size: 200,
-            enableResizing: true,
-          })
-        );
-      } else if (ALIGN_RIGHT_COLS.includes(col.id)) {
-        ret.push(
-          columnHelper.accessor(col.id, {
-            cell: (info) => (
-              <div style={{ float: "right" }}>{info.getValue()}</div>
-            ),
-            size: col.width,
-            meta: {
-              alignRight: true,
-            },
-          })
-        );
-      } else {
-        ret.push(
-          columnHelper.accessor(col.id, {
-            cell: (info) => info.getValue(),
-            size: col.width,
-          })
-        );
-      }
-    }
-    return ret;
-  }, []);
+type RowItem = {
+  component: {
+    text: string;
+  };
+};
+
+type RowData = {
+  instrument_id: string;
+  items: RowItem[];
+};
+
+const columnHelper = createColumnHelper<RowData>();
+
+const columns: ColumnData[] = zipWith(
+  response.columns,
+  response.rows[0].items,
+  (col1, col2) => ({
+    ...col1,
+    ...col2,
+  })
+);
+
+const colIndexMap: { [key: string]: number } = response.columns.reduce(
+  (prev, curr, currIdx) => {
+    return {
+      ...prev,
+      [curr.id]: currIdx,
+    };
+  },
+  {}
+);
+
+export const getColumnDefs = () => {
+  const colDefs = [];
+  for (const col of columns) {
+    colDefs.push(
+      columnHelper.accessor(
+        (row) => {
+          return row.items[colIndexMap[col.id]].component.text;
+        },
+        {
+          id: col.id,
+          cell: (info) => {
+            return <div>{info.getValue()}</div>;
+          },
+          size: 200,
+        }
+      )
+    );
+  }
+  return colDefs;
+};
+
+export const getTableData = () => {
+  return shuffle(response.rows.slice(1));
+};

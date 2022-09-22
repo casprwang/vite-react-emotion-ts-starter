@@ -16,7 +16,6 @@ body {
 table {
   border-collapse: collapse;
   border-spacing: 0;
-  font-family: arial, sans-serif;
   width: 100%;
   table-layout: fixed;
   font-size: 13px;
